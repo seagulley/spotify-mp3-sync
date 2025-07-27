@@ -21,7 +21,7 @@ export default function HomeScreen() {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const BACKEND_URL = 'https://purple-eyes-laugh.loca.lt';
+  const BACKEND_URL = 'https://spotisync.loca.lt';
 
   useEffect(() => {
     loadStoredAuth();

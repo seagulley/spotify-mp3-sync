@@ -1,7 +1,7 @@
 # Spotify MP3 Sync - Project Tasks & Status
 
 ## 🎯 Project Overview
-Backend for syncing Spotify playlists, downloading MP3s from YouTube, and uploading to S3 for offline listening.
+Full-stack application for syncing Spotify playlists, downloading MP3s from YouTube, and uploading to S3 for offline listening.
 
 ---
 
@@ -13,6 +13,8 @@ Backend for syncing Spotify playlists, downloading MP3s from YouTube, and upload
   - [x] CORS configuration
   - [x] Environment variable management
   - [x] Requirements.txt with dependencies
+  - [x] **NEW**: Dynamic HTTPS tunnel setup with LocalTunnel
+  - [x] **NEW**: Automated startup scripts (`start.sh`, `start_backend.py`)
 
 - [x] **Database Layer**
   - [x] SQLAlchemy ORM setup
@@ -38,6 +40,9 @@ Backend for syncing Spotify playlists, downloading MP3s from YouTube, and upload
   - [x] Spotify OAuth login endpoint (`/login`)
   - [x] OAuth callback endpoint (`/callback`)
   - [x] Access token storage and management
+  - [x] **NEW**: HTTPS redirect URI support (required for Spotify OAuth)
+  - [x] **NEW**: Custom subdomain setup (`https://spotisync.loca.lt`)
+  - [x] **NEW**: Frontend redirect after successful authentication
   - [x] **Tests**: `test/test_main.py` - OAuth flow, token management ✅ PASSING
 - [x] **JWT-based Authentication**
   - [x] Per-user JWTs for session management
@@ -185,25 +190,36 @@ Backend for syncing Spotify playlists, downloading MP3s from YouTube, and upload
 
 ---
 
-## 📱 Frontend & UI (Future)
+## 📱 Frontend & UI
 
-### ❌ NOT STARTED
-- [ ] **Web Interface**
-  - [ ] User authentication UI
-  - [ ] Playlist browser
-  - [ ] Download management interface
+### ✅ COMPLETED
+- [x] **React Native/Expo App**
+  - [x] Basic app structure with tabs
+  - [x] Spotify OAuth integration
+  - [x] Authentication hook (`useAuth.ts`)
+  - [x] **NEW**: HTTPS backend connection
+  - [x] **NEW**: Successful OAuth flow with frontend redirect
+
+### 🔄 IN PROGRESS / NEEDS IMPROVEMENT
+- [ ] **Enhanced Frontend Features**
+  - [ ] User profile page after authentication
+  - [ ] Playlist browser interface
+  - [ ] Download management UI
   - [ ] Storage usage dashboard
   - [ ] **Tests**: Frontend component tests, E2E tests
-
-- [ ] **Mobile App**
-  - [ ] iOS app development
-  - [ ] Offline playback functionality
-  - [ ] Background audio support
-  - [ ] **Tests**: Mobile app tests, offline functionality
 
 ---
 
 ## 🔧 DevOps & Deployment
+
+### ✅ COMPLETED
+- [x] **Development Setup**
+  - [x] **NEW**: Automated startup scripts
+  - [x] **NEW**: LocalTunnel HTTPS setup
+  - [x] **NEW**: Custom subdomain configuration
+  - [x] **NEW**: Project organization and file structure
+  - [x] **NEW**: Comprehensive `.gitignore` setup
+  - [x] **NEW**: Project documentation (README.md)
 
 ### ❌ NOT STARTED
 - [ ] **Production Setup**
@@ -251,8 +267,8 @@ Backend for syncing Spotify playlists, downloading MP3s from YouTube, and upload
 ## 🎯 Priority Tasks (Next Steps)
 
 ### High Priority
-1. **Enhanced Authentication** - Multi-user support and session management
-2. **LRU Cache Implementation** - Storage optimization
+1. **Frontend Profile Page** - Display user profile after successful authentication
+2. **Enhanced Download Features** - Batch processing, progress tracking
 3. **Integration Tests** - Full workflow testing
 
 ### Medium Priority

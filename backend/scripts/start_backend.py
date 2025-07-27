@@ -40,10 +40,10 @@ def update_backend_urls(https_url):
     
     # Update the URLs
     new_content = content.replace(
-        'DYNAMIC_REDIRECT_URI = "https://purple-eyes-laugh.loca.lt/callback"',
+        'DYNAMIC_REDIRECT_URI = "https://spotisync.loca.lt/callback"',
         f'DYNAMIC_REDIRECT_URI = "{https_url}/callback"'
     ).replace(
-        'BASE_URL = "https://purple-eyes-laugh.loca.lt"',
+        'BASE_URL = "https://spotisync.loca.lt"',
         f'BASE_URL = "{https_url}"'
     )
     
@@ -72,7 +72,7 @@ def update_frontend_urls(https_url):
         
         # Replace the old URL with the new one
         new_content = content.replace(
-            'const BACKEND_URL = \'https://purple-eyes-laugh.loca.lt\';',
+            'const BACKEND_URL = \'https://spotisync.loca.lt\';',
             f'const BACKEND_URL = \'{https_url}\';'
         )
         
