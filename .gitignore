@@ -1,6 +1,3 @@
-# Environment variables
-.env
-
 # Python
 __pycache__/
 *.py[cod]
@@ -24,14 +21,28 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
+# Virtual Environment
 venv/
 env/
 ENV/
-.venv/
-.env/
+env.bak/
+venv.bak/
 
-# IDE
+# Database
+*.db
+*.sqlite
+*.sqlite3
+spotify_sync.db
+
+# Cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# IDE/Editor
 .vscode/
 .idea/
 *.swp
@@ -40,16 +51,48 @@ ENV/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Logs
 *.log
+logs/
 
-# Downloaded files (MP3s, ZIPs)
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Large files
+*.pkg
+*.dmg
+*.zip
+*.tar.gz
+
+# Downloaded content
 downloads/
 *.mp3
-*.zip
+*.mp4
+*.wav
+*.flac
+
+# AWS CLI installer
+AWSCLIV2.pkg
 
 # Temporary files
+*.tmp
+*.temp
+temp/
 tmp/
-temp/ 
+
+# Mobile app specific (if any)
+mobile-spotify-mp3-sync/
+
+# Node modules (if any in root)
+node_modules/ 

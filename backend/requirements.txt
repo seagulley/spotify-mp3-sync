@@ -5,3 +5,6 @@ yt-dlp
 python-dotenv
 pytest 
 httpx
+sqlalchemy
+boto3
+PyJWT
