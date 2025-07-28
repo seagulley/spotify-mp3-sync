@@ -2,8 +2,7 @@ import { Image } from 'expo-image';
 import { Platform, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -18,7 +17,6 @@ interface User {
 
 export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const BACKEND_URL = 'https://spotisync.loca.lt';
@@ -33,10 +31,13 @@ export default function HomeScreen() {
       if (storedToken) {
         const userProfile = await fetchUserProfile(storedToken);
         setUser(userProfile);
-        setToken(storedToken);
+      } else {
+        // No token, redirect to login
+        router.replace('/login');
       }
     } catch (error) {
       console.error('Error loading auth:', error);
+      router.replace('/login');
     } finally {
       setLoading(false);
     }
@@ -65,37 +66,10 @@ export default function HomeScreen() {
     }
   };
 
-  const handleLogin = async () => {
-    try {
-      const result = await WebBrowser.openAuthSessionAsync(
-        `${BACKEND_URL}/login`,
-        `${Linking.createURL('/')}`
-      );
-
-      if (result.type === 'success' && result.url) {
-        const url = new URL(result.url);
-        const authToken = url.searchParams.get('token');
-        
-        if (authToken) {
-          await AsyncStorage.setItem('jwt_token', authToken);
-          const userProfile = await fetchUserProfile(authToken);
-          setUser(userProfile);
-          setToken(authToken);
-          Alert.alert('Success', 'Successfully logged in!');
-        }
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Failed to login. Please try again.');
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('jwt_token');
-      setUser(null);
-      setToken(null);
-      Alert.alert('Success', 'Successfully logged out!');
+      router.replace('/login');
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Error', 'Failed to logout. Please try again.');
@@ -124,27 +98,15 @@ export default function HomeScreen() {
         <HelloWave />
       </ThemedView>
 
-      {user ? (
-        <ThemedView style={styles.authContainer}>
-          <ThemedText type="subtitle">Welcome, {user.display_name}!</ThemedText>
-          {user.email && (
-            <ThemedText>Email: {user.email}</ThemedText>
-          )}
-          <TouchableOpacity style={styles.button} onPress={handleLogout}>
-            <ThemedText style={styles.buttonText}>Log Out</ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
-      ) : (
-        <ThemedView style={styles.authContainer}>
-          <ThemedText type="subtitle">Login with Spotify</ThemedText>
-          <ThemedText>
-            Connect your Spotify account to start syncing your playlists and downloading MP3s.
-          </ThemedText>
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <ThemedText style={styles.buttonText}>Login with Spotify</ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
-      )}
+      <ThemedView style={styles.authContainer}>
+        <ThemedText type="subtitle">Welcome, {user?.display_name}!</ThemedText>
+        {user?.email && (
+          <ThemedText>Email: {user.email}</ThemedText>
+        )}
+        <TouchableOpacity style={styles.button} onPress={handleLogout}>
+          <ThemedText style={styles.buttonText}>Log Out</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
 
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">How it works</ThemedText>

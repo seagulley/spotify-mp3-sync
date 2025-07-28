@@ -54,7 +54,8 @@ def get_localtunnel_url():
     # Fallback to the custom subdomain
     return "https://spotisync.loca.lt"
 
-LOCALTUNNEL_URL = get_localtunnel_url()
+# Use the working LocalTunnel URL
+LOCALTUNNEL_URL = "https://spotisync.loca.lt"
 DYNAMIC_REDIRECT_URI = f"{LOCALTUNNEL_URL}/callback"
 BASE_URL = LOCALTUNNEL_URL
 SESSION = requests.Session()
@@ -160,10 +161,11 @@ def callback(request: Request):
         "exp": datetime.utcnow() + timedelta(days=7)  # Token expires in 7 days
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-    return JSONResponse({
-        "message": f"Authentication successful! Welcome, {display_name}.",
-        "token": token
-    })
+    
+    # Redirect to frontend with token in URL parameters
+    frontend_url = "exp://10.132.173.52:8081"
+    redirect_url = f"{frontend_url}?token={token}"
+    return RedirectResponse(url=redirect_url)
 
 @app.get("/playlists")
 def get_playlists(authorization: str = Header(None)):
