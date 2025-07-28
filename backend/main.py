@@ -1,5 +1,6 @@
 import os
 import socket
+import tempfile
 from fastapi import FastAPI, Request, BackgroundTasks, Header, Body
 from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,9 +20,13 @@ from models import get_session, User, Song, Playlist, PlaylistSong
 import jwt
 from sqlalchemy import or_
 from concurrent.futures import ThreadPoolExecutor, as_completed
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev_secret_key")
+import logging
+
+# Disable SQLAlchemy logging
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
 load_dotenv()
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev_secret_key")
 
 SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
 SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
@@ -189,7 +194,7 @@ def get_playlists(authorization: str = Header(None)):
     
     # Sync playlists to database
     try:
-        changes = user_service.sync_user_playlists(user_id, sp)
+        changes = user_service.sync_user_playlists(user_id, sp, auto_download=True)
         print(f"Sync changes: {changes}")
     except Exception as e:
         print(f"Error syncing playlists: {e}")
@@ -226,7 +231,7 @@ def get_tracks(playlist_id: str, authorization: str = Header(None)):
     
     # Sync playlists to database (this will also sync tracks for all playlists)
     try:
-        changes = user_service.sync_user_playlists(user_id, sp)
+        changes = user_service.sync_user_playlists(user_id, sp, auto_download=True)
         print(f"Sync changes: {changes}")
     except Exception as e:
         print(f"Error syncing playlists: {e}")
@@ -256,9 +261,7 @@ class DownloadRequest(BaseModel):
 @app.post("/download")
 def download_tracks(request: DownloadRequest, background_tasks: BackgroundTasks):
     user_id = "test_user_123"  # TODO: Replace with real user ID from auth
-    download_id = str(uuid.uuid4())
-    temp_dir = f"downloads/{download_id}"
-    os.makedirs(temp_dir, exist_ok=True)
+    temp_dir = tempfile.mkdtemp()
 
     # Deduplicate tracks by (name, artist)
     unique_tracks = {(t.name, t.artist): t for t in request.tracks}.values()
@@ -268,6 +271,9 @@ def download_tracks(request: DownloadRequest, background_tasks: BackgroundTasks)
     def process_track(track):
         query = f"{track.name} {track.artist}"
         output_path = os.path.join(temp_dir, f"{track.name} - {track.artist}.mp3")
+        
+        print(f"🔍 Searching YouTube for: {track.name} - {track.artist}")
+        
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': output_path,
@@ -279,13 +285,31 @@ def download_tracks(request: DownloadRequest, background_tasks: BackgroundTasks)
             }],
         }
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([f"ytsearch1:{query}"])
+            # YouTube download step
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([f"ytsearch1:{query}"])
+                print(f"✅ YouTube download successful: {track.name} - {track.artist}")
+            except Exception as youtube_error:
+                print(f"❌ YouTube download failed for {track.name} - {track.artist}: {youtube_error}")
+                return (track, f"YouTube download failed: {youtube_error}")
+            
+            # Check if file was actually created
+            if not os.path.exists(output_path):
+                print(f"❌ Downloaded file not found: {output_path}")
+                return (track, f"Downloaded file not found: {output_path}")
+            
+            print(f"📤 Uploading to S3: {track.name} - {track.artist}")
+            
             s3_key = f"{user_id}/{track.name} - {track.artist}.mp3"
             song_id = f"{track.name}-{track.artist}"
             success = user_service.add_song_file(user_id, song_id, output_path, s3_key)
             if not success:
+                print(f"❌ S3/DB upload failed for {track.name} - {track.artist}")
                 return (track, f"Failed to upload {track.name} - {track.artist} to S3 or DB.")
+            
+            print(f"✅ Successfully uploaded: {track.name} - {track.artist}")
+            
             user_service.update_last_listened(user_id, song_id)
             download_url = s3_client.generate_presigned_url(s3_key)
             return (track, {
@@ -295,13 +319,15 @@ def download_tracks(request: DownloadRequest, background_tasks: BackgroundTasks)
                 "download_url": download_url
             })
         except Exception as e:
-            return (track, f"Error downloading/uploading {track.name} - {track.artist}: {e}")
+            print(f"❌ Unexpected error for {track.name} - {track.artist}: {e}")
+            return (track, f"Unexpected error: {e}")
 
     # Use ThreadPoolExecutor for parallel downloads
     with ThreadPoolExecutor(max_workers=4) as executor:
         future_to_track = {executor.submit(process_track, track): track for track in unique_tracks}
         for future in as_completed(future_to_track):
             track, result = future.result()
+            
             if isinstance(result, dict):
                 results.append(result)
             else:

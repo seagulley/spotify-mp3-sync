@@ -9,13 +9,8 @@ class S3Client:
     """Client for handling S3 operations"""
     
     def __init__(self):
-        self.s3_client = boto3.client(
-            's3',
-            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-            region_name=os.getenv('AWS_REGION', 'us-east-1')
-        )
-        self.bucket_name = os.getenv('S3_BUCKET_NAME')
+        self.s3_client = boto3.client('s3')
+        self.bucket_name = 'spotify-mp3-bucket'
         
         if not self.bucket_name:
             logging.warning("S3_BUCKET_NAME not set - S3 operations will fail")
@@ -24,17 +19,26 @@ class S3Client:
         """Upload a file to S3"""
         try:
             if not self.bucket_name:
-                logging.error("S3 bucket name not configured")
+                print("❌ S3 bucket name not configured")
+                return False
+            
+            # Check if file exists before uploading
+            if not os.path.exists(file_path):
+                print(f"❌ File not found for S3 upload: {file_path}")
                 return False
                 
+            print(f"📤 Attempting S3 upload: {file_path} -> {s3_key}")
             self.s3_client.upload_file(file_path, self.bucket_name, s3_key)
-            logging.info(f"Successfully uploaded {file_path} to s3://{self.bucket_name}/{s3_key}")
+            print(f"✅ Successfully uploaded to S3: {s3_key}")
             return True
         except ClientError as e:
-            logging.error(f"Error uploading file to S3: {e}")
+            print(f"❌ S3 ClientError upload failed: {e}")
+            print(f"   Error Code: {e.response['Error']['Code']}")
+            print(f"   Error Message: {e.response['Error']['Message']}")
             return False
         except Exception as e:
-            logging.error(f"Unexpected error uploading file: {e}")
+            print(f"❌ Unexpected S3 upload error: {e}")
+            print(f"   Error type: {type(e).__name__}")
             return False
     
     def download_file(self, s3_key: str, local_path: str) -> bool:

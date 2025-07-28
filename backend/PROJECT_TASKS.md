@@ -157,6 +157,18 @@ Full-stack application for syncing Spotify playlists, downloading MP3s from YouT
   - [ ] API contract testing
   - [ ] Error scenario testing
   - [ ] **Tests**: Integration tests, performance tests, error scenarios
+  - [ ] **TODO**: Fix database locking issues in cache integration tests
+    - [ ] Investigate SQLite concurrent access patterns
+    - [ ] Implement proper session isolation for integration tests
+    - [ ] Add database cleanup between tests
+    - [ ] Consider using in-memory SQLite for faster test execution
+    - [ ] **Affected tests**: `test_evict_cache_*`, `test_smart_evict_cache`, `test_optimize_cache_*`, `test_invalidate_cache_*`
+  - [x] **IMPROVED**: Database concurrency handling
+    - [x] Added global engine and session factory to reduce connection overhead
+    - [x] Improved SQLite settings with timeout and autocommit mode
+    - [x] Added retry logic with exponential backoff for sync operations
+    - [x] Better error handling and session management
+    - [x] **Result**: Reduced database locking issues in production
 
 ---
 

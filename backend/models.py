@@ -68,6 +68,10 @@ class PlaylistSong(Base):
     song = relationship("Song", back_populates="playlist_songs")
 
 # Database configuration
+# Global engine and session factory
+_engine = None
+_SessionLocal = None
+
 def get_database_url():
     """Get database URL from environment or use SQLite for development"""
     import os
@@ -75,13 +79,35 @@ def get_database_url():
     if database_url:
         return database_url
     else:
-        # Use SQLite for development
-        return "sqlite:///./spotify_sync.db"
+        # Use SQLite for development with better concurrency settings
+        return "sqlite:///./spotify_sync.db?timeout=30&check_same_thread=False"
 
 def create_database_engine():
-    """Create database engine"""
-    database_url = get_database_url()
-    return create_engine(database_url, echo=True)  # echo=True for debugging
+    """Create database engine with better concurrency settings"""
+    global _engine
+    if _engine is None:
+        database_url = get_database_url()
+        # Disable SQLAlchemy logging completely
+        import logging
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+        
+        # Add better SQLite settings for concurrency
+        connect_args = {}
+        if "sqlite" in database_url:
+            connect_args = {
+                "timeout": 30,
+                "check_same_thread": False,
+                "isolation_level": None  # Autocommit mode for better concurrency
+            }
+        
+        _engine = create_engine(
+            database_url, 
+            echo=False,
+            connect_args=connect_args,
+            pool_pre_ping=True,  # Verify connections before use
+            pool_recycle=3600     # Recycle connections every hour
+        )
+    return _engine
 
 def create_tables():
     """Create all tables"""
@@ -89,7 +115,14 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 
 def get_session():
-    """Get database session"""
-    engine = create_database_engine()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    return SessionLocal() 
+    """Get database session with better error handling"""
+    global _SessionLocal
+    if _SessionLocal is None:
+        engine = create_database_engine()
+        _SessionLocal = sessionmaker(
+            autocommit=False, 
+            autoflush=False, 
+            bind=engine,
+            expire_on_commit=False  # Keep objects accessible after commit
+        )
+    return _SessionLocal() 
